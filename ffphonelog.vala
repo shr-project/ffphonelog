@@ -1,5 +1,31 @@
+[DBus (name = "org.freesmartphone.PIM.Calls")]
+interface Calls : GLib.Object
+{
+    public abstract string query(HashTable<string,Value?> query)
+    throws DBus.Error;
+}
+
+[DBus (name = "org.freesmartphone.PIM.CallQuery")]
+interface CallQuery : GLib.Object
+{
+    public abstract void Dispose() throws DBus.Error;
+    public abstract int get_result_count() throws DBus.Error;
+}
+
 void main()
 {
+    var conn = DBus.Bus.get(DBus.BusType.SYSTEM);
+    var calls = (Calls) conn.get_object("org.freesmartphone.opimd",
+					"/org/freesmartphone/PIM/Calls");
+
+    var q = new HashTable<string,Value?>(null, null);
+    q.insert("_limit", 3);
+    var path = calls.query(q);
+    var reply = (CallQuery) conn.get_object("org.freesmartphone.opimd", path);
+    int cnt = reply.get_result_count();
+    stdout.printf(@"$path $cnt\n");
+    reply.Dispose();
+
     Value x;
     x = "foo";
 
