@@ -82,7 +82,7 @@ class CallItem
 	duration = (answered) ?
 	    res.lookup ("Duration").get_string().to_int() : 0;
 	var v = res.lookup("@Contacts");
-	int contact = (v != null) ? v.get_int() : -1;
+	int contact = (v != null && v.holds(typeof(int))) ? v.get_int() : -1;
 	if (contact != -1) {
 	    var path = @"/org/freesmartphone/PIM/Contacts/$contact";
 	    print(@"$path\n");
