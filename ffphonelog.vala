@@ -56,6 +56,7 @@ interface PhoneuiContacts : GLib.Object
 
 
 DBus.Connection conn;
+bool verbose = false;
 
 
 void die(string msg)
@@ -90,7 +91,7 @@ class CallItem
 
     public CallItem(HashTable<string,Value?> res)
     {
-	print_hash_table(res);
+	if (verbose) print_hash_table(res);
 	peer = res.lookup("Peer").get_string();
 	timestamp = res.lookup("Timestamp").get_int();
 	answered = res.lookup("Answered").get_int() != 0;
@@ -100,10 +101,10 @@ class CallItem
 	contact = (v != null && v.holds(typeof(int))) ? v.get_int() : -1;
 	if (contact != -1) {
 	    var path = @"/org/freesmartphone/PIM/Contacts/$contact";
-	    print(@"$path\n");
+	    if (verbose) print(@"$path\n");
 	    var r = ((Contact) conn.get_object("org.freesmartphone.opimd",
 					       path)).get_content();
-	    print_hash_table(r);
+	    if (verbose) print_hash_table(r);
 	    v = r.lookup("Name");
 	    if (v != null)
 		name = v.get_string();
@@ -180,8 +181,8 @@ class CallsList
 	var path = calls.query(q);
 	var reply = (CallQuery) conn.get_object("org.freesmartphone.opimd", path);
 	int cnt = reply.get_result_count();
-	stdout.printf(@"$path $cnt\n");
 	var results = reply.get_multiple_results(cnt);
+	if (verbose) stdout.printf(@"query: $path $cnt\n\n");
 	items = new CallItem[results.length];
 	int i = 0;
 	foreach (var res in results) {
@@ -285,6 +286,7 @@ class MainWin
 void main(string[] args)
 {
     Environment.set_prgname(Path.get_basename(args[0]));
+    verbose = ("-v" in args) || ("--verbose" in args);
     Elm.init(args);
     var mw = new MainWin();
     mw.show();
