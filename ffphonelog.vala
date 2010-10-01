@@ -39,6 +39,12 @@ interface Contact : GLib.Object
     public abstract HashTable<string,Value?> get_content() throws DBus.Error;
 }
 
+[DBus (name = "org.shr.phoneui.Contacts")]
+interface PhoneuiContacts : GLib.Object
+{
+    public abstract void edit_contact(string path) throws DBus.Error;
+}
+
 
 DBus.Connection conn;
 
@@ -82,7 +88,7 @@ class CallItem
 	duration = (answered) ?
 	    res.lookup ("Duration").get_string().to_int() : 0;
 	var v = res.lookup("@Contacts");
-	int contact = (v != null && v.holds(typeof(int))) ? v.get_int() : -1;
+	contact = (v != null && v.holds(typeof(int))) ? v.get_int() : -1;
 	if (contact != -1) {
 	    var path = @"/org/freesmartphone/PIM/Contacts/$contact";
 	    print(@"$path\n");
@@ -109,6 +115,15 @@ class CallItem
 		t, (uint) duration / 60, (uint) duration % 60) : t;
 	} else {
 	    return null;
+	}
+    }
+
+    public void edit_add()
+    {
+	if (contact != -1) {
+	    var o = (PhoneuiContacts) conn.get_object(
+		"org.shr.phoneui", "/org/shr/phoneui/Contacts");
+	    o.edit_contact(@"/org/freesmartphone/PIM/Contacts/$contact");
 	}
     }
 }
@@ -156,6 +171,19 @@ class CallsList
     {
 	return ((CallItem) data).get_label(part);
     }
+
+    public unowned CallItem? selected_item_get()
+    {
+	unowned GenlistItem item = lst.selected_item_get();
+	return (item != null) ? (CallItem) item.data_get() : null;
+    }
+
+    public void edit_add_selected_item()
+    {
+	unowned CallItem item = selected_item_get();
+	if (item != null)
+	    item.edit_add();
+    }
 }
 
 class MainWin
@@ -197,7 +225,7 @@ class MainWin
 	bx2.homogenous_set(true);
 	bx2.show();
 
-	add_button("Edit/Add", () => {});
+	add_button("Edit/Add", calls.edit_add_selected_item);
 
 	bx.pack_end(bx2);
 
