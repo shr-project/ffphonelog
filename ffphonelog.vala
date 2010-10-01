@@ -17,6 +17,13 @@
 
 using Elm;
 
+[DBus (name = "org.freesmartphone.GSM.Call")]
+interface GSMCall : GLib.Object
+{
+    public abstract int initiate(string number, string type)
+    throws DBus.Error;
+}
+
 [DBus (name = "org.freesmartphone.PIM.Calls")]
 interface Calls : GLib.Object
 {
@@ -134,6 +141,16 @@ class CallItem
 	    o.create_contact(fields);
 	}
     }
+
+    public void call()
+    {
+	if (peer != null)
+	    ((GSMCall) conn.get_object(
+		"org.freesmartphone.ogsmd",
+		"/org/freesmartphone/GSM/Device")).initiate(peer, "voice");
+	else
+	    message("CallItem.call: will not initiate a call: peer is null\n");
+    }
 }
 
 class CallsList
@@ -192,6 +209,13 @@ class CallsList
 	if (item != null)
 	    item.edit_add();
     }
+
+    public void call_selected_item()
+    {
+	unowned CallItem item = selected_item_get();
+	if (item != null)
+	    item.call();
+    }
 }
 
 class MainWin
@@ -234,6 +258,7 @@ class MainWin
 	bx2.show();
 
 	add_button("Edit/Add", calls.edit_add_selected_item);
+	add_button("Call", calls.call_selected_item);
 
 	bx.pack_end(bx2);
 
