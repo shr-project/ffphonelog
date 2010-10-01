@@ -43,6 +43,8 @@ interface Contact : GLib.Object
 interface PhoneuiContacts : GLib.Object
 {
     public abstract void edit_contact(string path) throws DBus.Error;
+    public abstract string create_contact(HashTable<string,Value?> values)
+    throws DBus.Error;
 }
 
 
@@ -120,10 +122,16 @@ class CallItem
 
     public void edit_add()
     {
+	var o = (PhoneuiContacts) conn.get_object(
+	    "org.shr.phoneui", "/org/shr/phoneui/Contacts");
 	if (contact != -1) {
-	    var o = (PhoneuiContacts) conn.get_object(
-		"org.shr.phoneui", "/org/shr/phoneui/Contacts");
 	    o.edit_contact(@"/org/freesmartphone/PIM/Contacts/$contact");
+	} else {
+	    // XXX create_contact seems to be broken in phoneui?
+	    var fields = new HashTable<string,Value?>(null, null);
+	    fields.insert("Name", "");
+	    fields.insert("Phone", peer);
+	    o.create_contact(fields);
 	}
     }
 }
