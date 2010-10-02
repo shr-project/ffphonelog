@@ -30,7 +30,7 @@ interface GSMCall : GLib.Object
 [DBus (name = "org.freesmartphone.PIM.Calls")]
 interface Calls : GLib.Object
 {
-    public abstract string query(HashTable<string,Value?> query)
+    public abstract async string query(HashTable<string,Value?> query)
     throws DBus.Error;
 }
 
@@ -39,8 +39,8 @@ interface CallQuery : GLib.Object
 {
     public abstract void Dispose() throws DBus.Error;
     public abstract int get_result_count() throws DBus.Error;
-    public abstract HashTable<string,Value?>[] get_multiple_results(int i)
-    throws DBus.Error;
+    public abstract async HashTable<string,Value?>[]
+    get_multiple_results(int i) throws DBus.Error;
 }
 
 [DBus (name = "org.freesmartphone.PIM.Contact")]
@@ -172,7 +172,7 @@ class CallsList
 	itc.func.label_get = (GenlistItemLabelGetFunc) get_label;
     }
 
-    public void populate()
+    public async void populate()
     {
 	conn = DBus.Bus.get(DBus.BusType.SYSTEM);
 	var t = clock();
@@ -184,10 +184,10 @@ class CallsList
 	q.insert("_sortby", "Timestamp");
 	q.insert("_sortdesc", true);
 	q.insert("_resolve_phonenumber", true);
-	var path = calls.query(q);
+	var path = yield calls.query(q);
 	var reply = (CallQuery) conn.get_object("org.freesmartphone.opimd", path);
 	int cnt = reply.get_result_count();
-	var results = reply.get_multiple_results(cnt);
+	var results = yield reply.get_multiple_results(cnt);
 	if (verbose) print(@"query: $path $cnt\n\n");
 	items = new CallItem[results.length];
 	int i = 0;
@@ -253,7 +253,7 @@ class MainWin
 	bx.show();
 
 	calls = new CallsList(win);
-	calls.populate();
+	calls.populate.begin();
 	calls.lst.size_hint_weight_set(1.0, 1.0);
 	calls.lst.size_hint_align_set(-1.0, -1.0);
 	bx.pack_end(calls.lst);
@@ -295,6 +295,7 @@ void main(string[] args)
     Environment.set_prgname(Path.get_basename(args[0]));
     verbose = ("-v" in args) || ("--verbose" in args);
     Elm.init(args);
+    Ecore.MainLoop.glib_integrate();
     var mw = new MainWin();
     mw.show();
     Elm.run();

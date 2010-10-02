@@ -1,9 +1,9 @@
 VERSION = 0.0.1
 
 PREFIX = /usr
-PKG_CFLAGS = `pkg-config --cflags elementary dbus-glib-1`
-PKG_LIBS = `pkg-config --libs elementary dbus-glib-1`
-VALAFLAGS = --pkg elm --pkg dbus-glib-1 --pkg posix
+PKG_CFLAGS = `pkg-config --cflags elementary dbus-glib-1 gio-2.0`
+PKG_LIBS = `pkg-config --libs elementary dbus-glib-1 gio-2.0`
+VALAFLAGS = --pkg elm --pkg dbus-glib-1 --pkg posix --pkg gio-2.0
 CC=cc
 
 OE_TOPDIR = `which bitbake | sed s:/bitbake/bin/bitbake::`
