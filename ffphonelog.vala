@@ -95,12 +95,14 @@ class CallItem
     public CallItem(HashTable<string,Value?> res)
     {
 	if (verbose) print_hash_table(res);
-	peer = res.lookup("Peer").get_string();
+	unowned Value? v = res.lookup("Peer");
+	if (v != null && v.holds(typeof(string)))
+	    peer = v.get_string();
 	timestamp = res.lookup("Timestamp").get_int();
 	answered = res.lookup("Answered").get_int() != 0;
 	duration = (answered) ?
 	    res.lookup ("Duration").get_string().to_int() : 0;
-	var v = res.lookup("@Contacts");
+	v = res.lookup("@Contacts");
 	contact = (v != null && v.holds(typeof(int))) ? v.get_int() : -1;
 	if (contact != -1) {
 	    var path = @"/org/freesmartphone/PIM/Contacts/$contact";
@@ -178,7 +180,7 @@ class CallsList
 					    "/org/freesmartphone/PIM/Calls");
 
 	var q = new HashTable<string,Value?>(null, null);
-	q.insert("_limit", 10);
+	q.insert("_limit", 30);
 	q.insert("_sortby", "Timestamp");
 	q.insert("_sortdesc", true);
 	q.insert("_resolve_phonenumber", true);
@@ -186,7 +188,7 @@ class CallsList
 	var reply = (CallQuery) conn.get_object("org.freesmartphone.opimd", path);
 	int cnt = reply.get_result_count();
 	var results = reply.get_multiple_results(cnt);
-	if (verbose) stdout.printf(@"query: $path $cnt\n\n");
+	if (verbose) print(@"query: $path $cnt\n\n");
 	items = new CallItem[results.length];
 	int i = 0;
 	foreach (var res in results) {
