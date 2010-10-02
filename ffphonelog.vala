@@ -17,6 +17,9 @@
 
 using Elm;
 
+extern long clock();
+extern const int CLOCKS_PER_SEC;
+
 [DBus (name = "org.freesmartphone.GSM.Call")]
 interface GSMCall : GLib.Object
 {
@@ -170,6 +173,7 @@ class CallsList
     public void populate()
     {
 	conn = DBus.Bus.get(DBus.BusType.SYSTEM);
+	var t = clock();
 	var calls = (Calls) conn.get_object("org.freesmartphone.opimd",
 					    "/org/freesmartphone/PIM/Calls");
 
@@ -190,6 +194,7 @@ class CallsList
 	    lst.item_append(itc, items[i], null, GenlistItemFlags.NONE, null);
 	    i++;
 	}
+	print(@"populate: $((double)(clock() - t) / CLOCKS_PER_SEC)s\n");
 	reply.Dispose();
     }
 
