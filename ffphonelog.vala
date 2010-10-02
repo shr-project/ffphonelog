@@ -187,14 +187,19 @@ class CallsList
 	var path = yield calls.query(q);
 	var reply = (CallQuery) conn.get_object("org.freesmartphone.opimd", path);
 	int cnt = reply.get_result_count();
-	var results = yield reply.get_multiple_results(cnt);
 	if (verbose) print(@"query: $path $cnt\n\n");
-	items = new CallItem[results.length];
+	items = new CallItem[cnt];
 	int i = 0;
-	foreach (var res in results) {
-	    items[i] = new CallItem(res);
-	    lst.item_append(itc, items[i], null, GenlistItemFlags.NONE, null);
-	    i++;
+	while (cnt > 0) {
+	    int chunk = (cnt > 10) ? 10 : cnt;
+	    var results = yield reply.get_multiple_results(chunk);
+	    foreach (var res in results) {
+		items[i] = new CallItem(res);
+		lst.item_append(itc, items[i], null, GenlistItemFlags.NONE,
+				null);
+		i++;
+	    }
+	    cnt -= chunk;
 	}
 	print(@"populate: $((double)(clock() - t) / CLOCKS_PER_SEC)s\n");
 	reply.Dispose();
