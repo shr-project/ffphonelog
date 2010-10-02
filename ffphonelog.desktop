@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=ffPhoneLog
+Comment=Show phone log
+Exec=/usr/bin/ffphonelog
+Icon=ffphonelog
+Terminal=false
+Type=Application
+Categories=Utility;
+SingleInstance=true
+StartupNotify=true
