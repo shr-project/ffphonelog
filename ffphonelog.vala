@@ -91,6 +91,8 @@ class CallItem
     bool answered;
     time_t timestamp;
     time_t duration;
+    int subitems;
+    public unowned CallItem next_subitem;
 
     public CallItem(HashTable<string,Value?> res)
     {
@@ -117,13 +119,29 @@ class CallItem
 	// XXX may also use Timezone from CallQuery result
     }
 
+    public bool maybe_add_subitem(CallItem next, CallItem? last_subitem)
+    {
+	if (contact != -1 && next.contact == contact ||
+	    peer != null && next.peer == peer) {
+	    if (next_subitem == null)
+		next_subitem = next;
+	    else
+		last_subitem.next_subitem = next;
+	    subitems += 1;
+	    return true;
+	} else {
+	    return false;
+	}
+    }
+
     public string? get_label(string part)
     {
 	if (part == "elm.text") {
+	    var suffix = (subitems > 0) ? " [%d]".printf(subitems + 1) : "";
 	    if (name != null)
-		return @"$name ($peer)";
+		return @"$name$suffix    ($peer)";
 	    else
-		return peer;
+		return @"$peer$suffix";
 	} else if (part == "elm.text.sub") {
 	    var t = GLib.Time.local(timestamp).format("%a %F %T");
 	    return (answered) ? "%s,   %02u:%02u".printf(
@@ -170,6 +188,25 @@ class CallsList
 	lst = new Genlist(parent);
 	itc.item_style = "double_label";
 	itc.func.label_get = (GenlistItemLabelGetFunc) get_label;
+	lst.smart_callback_add("expand,request", expand);
+	lst.smart_callback_add("contract,request", contract);
+    }
+
+    void expand(Evas.Object obj, void *event_info)
+    {
+	var it = (GenlistItem *) event_info;
+	it->expanded_set(true);
+	for (unowned CallItem subitem =
+		 ((CallItem) it->data_get()).next_subitem;
+	     subitem != null; subitem = subitem.next_subitem) {
+	    lst.item_append(itc, subitem, it, GenlistItemFlags.NONE, null);
+	}
+    }
+    void contract(Evas.Object obj, void *event_info)
+    {
+	var it = (GenlistItem *) event_info;
+	it->subitems_clear();
+	it->expanded_set(false);
     }
 
     public async void populate()
@@ -190,13 +227,28 @@ class CallsList
 	if (verbose) print(@"query: $path $cnt\n\n");
 	items = new CallItem[cnt];
 	int i = 0;
+	unowned CallItem parent = null, last_subitem = null;
+	unowned GenlistItem parent_gl_item = null;
 	while (cnt > 0) {
 	    int chunk = (cnt > 10) ? 10 : cnt;
 	    var results = yield reply.get_multiple_results(chunk);
 	    foreach (var res in results) {
 		items[i] = new CallItem(res);
-		lst.item_append(itc, items[i], null, GenlistItemFlags.NONE,
-				null);
+		if (parent != null && parent.maybe_add_subitem(items[i],
+							       last_subitem)) {
+		    if (last_subitem == null) {
+			parent_gl_item.del();
+			parent_gl_item = lst.item_append(
+			    itc, parent, null, GenlistItemFlags.SUBITEMS,
+			    null);
+		    }
+		    last_subitem = items[i];
+		} else {
+		    parent = items[i];
+		    parent_gl_item = lst.item_append(
+			itc, items[i], null, GenlistItemFlags.NONE, null);
+		    last_subitem = null;
+		}
 		i++;
 	    }
 	    cnt -= chunk;
