@@ -19,9 +19,12 @@ clean:
 	rm -f ffphonelog ${OBJ} ffphonelog.c
 
 dist:
-	mkdir -p ffphonelog-${VERSION}
-	cp Makefile config.mk ffphonelog.vala ffphonelog.desktop \
-		ffphonelog.png ffphonelog.bb ffphonelog-${VERSION}
+	mkdir -p ffphonelog-${VERSION}/data
+	cp Makefile config.mk ffphonelog.vala ffphonelog.bb \
+		 ffphonelog-${VERSION}
+	cp data/ffphonelog.desktop data/ffphonelog.png \
+		data/general.png data/made.png data/missed.png \
+		data/received.png ffphonelog-${VERSION}/data
 	tar zcf ffphonelog-${VERSION}.tar.gz ffphonelog-${VERSION}
 	rm -r ffphonelog-${VERSION}
 
@@ -29,9 +32,13 @@ install:
 	install -d ${DESTDIR}${PREFIX}/bin
 	install -m 755  ffphonelog ${DESTDIR}${PREFIX}/bin
 	install -d ${DESTDIR}${PREFIX}/share/applications
-	install -m 644 ffphonelog.desktop ${DESTDIR}${PREFIX}/share/applications
+	install -m 644 data/ffphonelog.desktop \
+		${DESTDIR}${PREFIX}/share/applications
 	install -d ${DESTDIR}${PREFIX}/share/pixmaps
-	install -m 644 ffphonelog.png ${DESTDIR}${PREFIX}/share/pixmaps
+	install -m 644 data/ffphonelog.png ${DESTDIR}${PREFIX}/share/pixmaps
+	install -d ${DESTDIR}${PREFIX}/share/ffphonelog/icons
+	install -m 644 data/general.png data/made.png data/missed.png \
+		data/received.png ${DESTDIR}${PREFIX}/share/ffphonelog/icons
 
 do_%:
 	bitbake -c $* -b ffphonelog.bb

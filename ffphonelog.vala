@@ -17,6 +17,8 @@
 
 using Elm;
 
+const string ICONS_DIR = "/usr/share/ffphonelog/icons";
+
 extern long clock();
 extern const int CLOCKS_PER_SEC;
 
@@ -419,14 +421,14 @@ class MainWin
 	bx.pack_end(calls.lst);
 	calls.lst.show();
 
-	(void) tb.item_add(null, "In",
+	(void) tb.item_add(icon("received.png"), "In",
 			   () => calls.switch_to_mode(Mode.INCOMING));
-	(void) tb.item_add(null, "Out",
+	(void) tb.item_add(icon("made.png"), "Out",
 			   () => calls.switch_to_mode(Mode.OUTGOING));
 	((ToolbarItem *) tb.item_add(
-	    null, "Missed",
+	    icon("missed.png"), "Missed",
 	    () => calls.switch_to_mode(Mode.MISSED)))->select();
-	(void) tb.item_add(null, "All",
+	(void) tb.item_add(icon("general.png"), "All",
 			   () => calls.switch_to_mode(Mode.ALL));
 
 	bx2 = new Box(win);
@@ -446,6 +448,13 @@ class MainWin
     public void show()
     {
 	win.show();
+    }
+
+    Elm.Icon *icon(string name)
+    {
+	Elm.Icon *ic = new Elm.Icon(win);
+	ic->file_set(Path.build_filename(ICONS_DIR, name));
+	return ic;
     }
 
     void add_button(string label, Evas.Callback cb)
