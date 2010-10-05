@@ -46,7 +46,8 @@ interface CallQuery : GLib.Object
 [DBus (name = "org.freesmartphone.PIM.Contact")]
 interface Contact : GLib.Object
 {
-    public abstract HashTable<string,Value?> get_content() throws DBus.Error;
+    public abstract async HashTable<string,Value?> get_content()
+    throws DBus.Error;
 }
 
 [DBus (name = "org.shr.phoneui.Contacts")]
@@ -120,13 +121,18 @@ class CallItem
 	    res.lookup ("Duration").get_string().to_int() : 0;
 	v = res.lookup("@Contacts");
 	contact = (v != null && v.holds(typeof(int))) ? v.get_int() : -1;
+    }
+
+    public async void resolve_phone_number()
+    {
 	if (contact != -1) {
 	    var path = @"/org/freesmartphone/PIM/Contacts/$contact";
 	    if (verbose) print(@"$path\n");
-	    var r = ((Contact) conn.get_object("org.freesmartphone.opimd",
-					       path)).get_content();
+	    var o = (Contact) conn.get_object("org.freesmartphone.opimd",
+					      path);
+	    var r = yield o.get_content();
 	    if (verbose) print_hash_table(r);
-	    v = r.lookup("Name");
+	    var v = r.lookup("Name");
 	    if (v != null)
 		name = v.get_string();
 	}
@@ -307,7 +313,8 @@ class CallsList
 	    int chunk = (cnt > 10) ? 10 : cnt;
 	    var results = yield reply.get_multiple_results(chunk);
 	    foreach (var res in results) {
-		m.items[i] = new CallItem(res);
+		var item = m.items[i] = new CallItem(res);
+		yield item.resolve_phone_number();
 		if (cur_mode == mode) {
 		    if (parent != null &&
 			parent.maybe_add_subitem(m.items[i], last_subitem)) {
