@@ -133,8 +133,18 @@ class CallItem
 	    var r = yield o.get_content();
 	    if (verbose) print_hash_table(r);
 	    var v = r.lookup("Name");
-	    if (v != null)
+	    if (v != null && v.holds(typeof(string)))
 		name = v.get_string();
+	    v = r.lookup("Surname");
+	    if (v != null && v.holds(typeof(string))) {
+		var surname = v.get_string();
+		name = (name != null) ? @"$name $surname" : surname;
+	    }
+	    if (name == null) {
+		v = r.lookup("Nickname");
+		name = (v != null && v.holds(typeof(string))) ?
+		    v.get_string() : "???";
+	    }
 	}
 	// XXX may also use Timezone from CallQuery result
     }
