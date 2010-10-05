@@ -211,6 +211,9 @@ class CallsList
 
     public async void populate()
     {
+	(void) new Ecore.Idler(populate.callback);
+	yield;
+
 	conn = DBus.Bus.get(DBus.BusType.SYSTEM);
 	var t = clock();
 	var calls = (Calls) conn.get_object("org.freesmartphone.opimd",
