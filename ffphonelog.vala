@@ -57,6 +57,20 @@ interface PhoneuiContacts : GLib.Object
     throws DBus.Error;
 }
 
+enum Mode
+{
+    INCOMING=0,
+    OUTGOING,
+    MISSED,
+    ALL
+}
+
+enum RetrivingStatus
+{
+    NOT_STARTED,
+    STARTED
+}
+
 
 DBus.Connection conn;
 bool verbose = false;
@@ -91,7 +105,7 @@ class CallItem
     bool answered;
     time_t timestamp;
     time_t duration;
-    int subitems;
+    public int subitems;
     public unowned CallItem next_subitem;
 
     public CallItem(HashTable<string,Value?> res)
@@ -128,6 +142,7 @@ class CallItem
 	    else
 		last_subitem.next_subitem = next;
 	    subitems += 1;
+	    next.subitems = -1;
 	    return true;
 	} else {
 	    return false;
@@ -177,11 +192,20 @@ class CallItem
     }
 }
 
+[Compact]
+class ModeItems
+{
+    public RetrivingStatus status = RetrivingStatus.NOT_STARTED;
+    public CallItem[] items = null;
+    public int items_cnt = 0;
+}
+
 class CallsList
 {
     public Genlist lst;
     GenlistItemClass itc;
-    CallItem[] items;
+    ModeItems mode_items[4];
+    Mode cur_mode;
 
     public CallsList(Elm.Object parent)
     {
@@ -190,6 +214,9 @@ class CallsList
 	itc.func.label_get = (GenlistItemLabelGetFunc) get_label;
 	lst.smart_callback_add("expand,request", expand);
 	lst.smart_callback_add("contract,request", contract);
+	for (int i = 0; i < mode_items.length; i++) {
+	    mode_items[i] = new ModeItems();
+	}
     }
 
     void expand(Evas.Object obj, void *event_info)
@@ -209,12 +236,41 @@ class CallsList
 	it->expanded_set(false);
     }
 
-    public async void populate()
+    public void switch_to_mode(Mode mode)
     {
-	(void) new Ecore.Idler(populate.callback);
+	if (mode == cur_mode)
+	    return;
+	lst.clear();
+	unowned ModeItems m = mode_items[mode];
+	cur_mode = mode;
+	if (m.status == RetrivingStatus.NOT_STARTED) {
+	    fetch_items.begin(mode);
+	} else {
+	    for (int i = 0; i < m.items_cnt; i++) {
+		var item = m.items[i];
+		if (item.subitems != -1) {
+		    if (item.subitems > 0)
+			lst.item_append(itc, item, null,
+					GenlistItemFlags.SUBITEMS, null);
+		    else
+			lst.item_append(itc, item, null,
+					GenlistItemFlags.NONE, null);
+		}
+	    }
+	}
+    }
+
+    async void fetch_items(Mode mode)
+    {
+	unowned ModeItems m = mode_items[mode];
+	m.status = RetrivingStatus.STARTED;
+	
+	(void) new Ecore.Idler(fetch_items.callback);
 	yield;
 
-	conn = DBus.Bus.get(DBus.BusType.SYSTEM);
+	if (conn == null)
+	    conn = DBus.Bus.get(DBus.BusType.SYSTEM);
+
 	var t = clock();
 	var calls = (Calls) conn.get_object("org.freesmartphone.opimd",
 					    "/org/freesmartphone/PIM/Calls");
@@ -224,11 +280,26 @@ class CallsList
 	q.insert("_sortby", "Timestamp");
 	q.insert("_sortdesc", true);
 	q.insert("_resolve_phonenumber", true);
+	switch (mode) {
+	case Mode.INCOMING:
+	    q.insert("Direction", "in");
+	    q.insert("Answered", 1);
+	    break;
+	case Mode.OUTGOING:
+	    q.insert("Direction", "out");
+	    break;
+	case Mode.MISSED:
+	    q.insert("Direction", "in");
+	    q.insert("Answered", 0);
+	    break;
+	case Mode.ALL:
+	    break;
+	}
 	var path = yield calls.query(q);
 	var reply = (CallQuery) conn.get_object("org.freesmartphone.opimd", path);
 	int cnt = reply.get_result_count();
 	if (verbose) print(@"query: $path $cnt\n\n");
-	items = new CallItem[cnt];
+	m.items = new CallItem[cnt];
 	int i = 0;
 	unowned CallItem parent = null, last_subitem = null;
 	unowned GenlistItem parent_gl_item = null;
@@ -236,27 +307,31 @@ class CallsList
 	    int chunk = (cnt > 10) ? 10 : cnt;
 	    var results = yield reply.get_multiple_results(chunk);
 	    foreach (var res in results) {
-		items[i] = new CallItem(res);
-		if (parent != null && parent.maybe_add_subitem(items[i],
-							       last_subitem)) {
-		    if (last_subitem == null) {
-			parent_gl_item.del();
+		m.items[i] = new CallItem(res);
+		if (cur_mode == mode) {
+		    if (parent != null &&
+			parent.maybe_add_subitem(m.items[i], last_subitem)) {
+			if (last_subitem == null) {
+			    parent_gl_item.del();
+			    parent_gl_item = lst.item_append(
+				itc, parent, null,
+				GenlistItemFlags.SUBITEMS, null);
+			}
+			last_subitem = m.items[i];
+		    } else {
+			parent = m.items[i];
 			parent_gl_item = lst.item_append(
-			    itc, parent, null, GenlistItemFlags.SUBITEMS,
-			    null);
+			    itc, m.items[i], null,
+			    GenlistItemFlags.NONE, null);
+			last_subitem = null;
 		    }
-		    last_subitem = items[i];
-		} else {
-		    parent = items[i];
-		    parent_gl_item = lst.item_append(
-			itc, items[i], null, GenlistItemFlags.NONE, null);
-		    last_subitem = null;
 		}
 		i++;
+		m.items_cnt++;
 	    }
 	    cnt -= chunk;
 	}
-	print(@"populate: $((double)(clock() - t) / CLOCKS_PER_SEC)s\n");
+	print(@"fetch_items: $((double)(clock() - t) / CLOCKS_PER_SEC)s\n");
 	reply.Dispose();
     }
 
@@ -292,6 +367,7 @@ class MainWin
     Bg bg;
     Box bx;
     Box bx2;
+    Toolbar tb;
     CallsList calls;
 
     public MainWin()
@@ -312,12 +388,29 @@ class MainWin
 	win.resize_object_add(bx);
 	bx.show();
 
+	tb = new Toolbar(win);
+	tb.scrollable_set(false);
+	tb.size_hint_weight_set(0.0, 0.0);
+	tb.size_hint_align_set(Evas.Hint.FILL, 0.0);
+	bx.pack_end(tb);
+	tb.show();
+
 	calls = new CallsList(win);
-	calls.populate.begin();
+	calls.switch_to_mode(Mode.MISSED);
 	calls.lst.size_hint_weight_set(1.0, 1.0);
 	calls.lst.size_hint_align_set(-1.0, -1.0);
 	bx.pack_end(calls.lst);
 	calls.lst.show();
+
+	(void) tb.item_add(null, "In",
+			   () => calls.switch_to_mode(Mode.INCOMING));
+	(void) tb.item_add(null, "Out",
+			   () => calls.switch_to_mode(Mode.OUTGOING));
+	((ToolbarItem *) tb.item_add(
+	    null, "Missed",
+	    () => calls.switch_to_mode(Mode.MISSED)))->select();
+	(void) tb.item_add(null, "All",
+			   () => calls.switch_to_mode(Mode.ALL));
 
 	bx2 = new Box(win);
 	bx2.size_hint_align_set(-1.0, -1.0);
