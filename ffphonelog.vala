@@ -105,6 +105,7 @@ class CallItem
     string peer;
     int contact;
     string name;
+    public Mode mode;
     bool answered;
     time_t timestamp;
     time_t duration;
@@ -153,8 +154,9 @@ class CallItem
 
     public bool maybe_add_subitem(CallItem next, CallItem? last_subitem)
     {
-	if (contact != -1 && next.contact == contact ||
-	    peer != null && next.peer == peer) {
+	if (mode == next.mode &&
+	    (contact != -1 && next.contact == contact ||
+	     peer != null && next.peer == peer)) {
 	    if (next_subitem == null)
 		next_subitem = next;
 	    else
