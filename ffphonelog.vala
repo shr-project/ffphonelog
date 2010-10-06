@@ -381,9 +381,9 @@ class CallsList
 	    return null;
 	string s;
 	switch (((CallItem) data).mode) {
-	case Mode.INCOMING: s = "received.png"; break;
-	case Mode.OUTGOING: s = "made.png"; break;
-	case Mode.MISSED: s = "missed.png"; break;
+	case Mode.INCOMING: s = "received-mini.png"; break;
+	case Mode.OUTGOING: s = "made-mini.png"; break;
+	case Mode.MISSED: s = "missed-mini.png"; break;
 	default: return null;
 	}
 	var ic = new Elm.Icon(obj);

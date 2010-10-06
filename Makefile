@@ -24,7 +24,9 @@ dist:
 		 ffphonelog-${VERSION}
 	cp data/ffphonelog.desktop data/ffphonelog.png \
 		data/general.png data/made.png data/missed.png \
-		data/received.png ffphonelog-${VERSION}/data
+		data/received.png data/made-mini.png \
+		data/missed-mini.png data/received-mini.png \
+		ffphonelog-${VERSION}/data
 	tar zcf ffphonelog-${VERSION}.tar.gz ffphonelog-${VERSION}
 	rm -r ffphonelog-${VERSION}
 
@@ -38,7 +40,9 @@ install:
 	install -m 644 data/ffphonelog.png ${DESTDIR}${PREFIX}/share/pixmaps
 	install -d ${DESTDIR}${PREFIX}/share/ffphonelog/icons
 	install -m 644 data/general.png data/made.png data/missed.png \
-		data/received.png ${DESTDIR}${PREFIX}/share/ffphonelog/icons
+		data/received.png data/made-mini.png \
+		data/missed-mini.png data/received-mini.png \
+		${DESTDIR}${PREFIX}/share/ffphonelog/icons
 
 do_%:
 	bitbake -c $* -b ffphonelog.bb
