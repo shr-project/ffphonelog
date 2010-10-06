@@ -60,6 +60,13 @@ interface PhoneuiContacts : GLib.Object
     throws DBus.Error;
 }
 
+[DBus (name = "org.shr.phoneui.Messages")]
+interface PhoneuiMessages : GLib.Object
+{
+    public abstract void create_message(HashTable<string,Value?> options)
+    throws DBus.Error;
+}
+
 enum Mode
 {
     INCOMING=0,
@@ -221,6 +228,19 @@ class CallItem
 		"/org/freesmartphone/GSM/Device")).initiate(peer, "voice");
 	else
 	    message("CallItem.call: will not initiate a call: peer is null\n");
+    }
+
+    public void create_message()
+    {
+	if (peer != null) {
+	    var q = new HashTable<string,Value?>(null, null);
+	    q.insert("Phone", peer);
+	    ((PhoneuiMessages) conn.get_object(
+		"org.shr.phoneui",
+		"/org/shr/phoneui/Messages")).create_message(q);
+	} else {
+	    message("create_message: skipped: peer is null\n");
+	}
     }
 }
 
@@ -412,6 +432,13 @@ class CallsList
 	if (item != null)
 	    item.call();
     }
+
+    public void create_message_to_selected_item()
+    {
+	unowned CallItem item = selected_item_get();
+	if (item != null)
+	    item.create_message();
+    }
 }
 
 class MainWin
@@ -473,6 +500,7 @@ class MainWin
 
 	add_button("Edit/Add", calls.edit_add_selected_item);
 	add_button("Call", calls.call_selected_item);
+	add_button("SMS", calls.create_message_to_selected_item);
 
 	bx.pack_end(bx2);
 
