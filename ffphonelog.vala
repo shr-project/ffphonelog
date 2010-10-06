@@ -114,6 +114,7 @@ class CallItem
     string name;
     public Mode mode;
     bool answered;
+    public bool is_new;
     time_t timestamp;
     time_t duration;
     public int subitems;
@@ -133,6 +134,11 @@ class CallItem
 	    switch (v.get_string()) {
 	    case "in":
 		mode = (answered) ? Mode.INCOMING : Mode.MISSED;
+		if (mode == Mode.MISSED) {
+		    v = res.lookup("New");
+		    if (v != null && v.holds(typeof(int)))
+			is_new = v.get_int() != 0;
+		}
 		break;
 	    case "out":
 		mode = Mode.OUTGOING;
@@ -397,10 +403,12 @@ class CallsList
 
     static Elm.Object? get_icon(void *data, Elm.Object? obj, string? part)
     {
-	if (cur_mode != Mode.ALL || part != "elm.swallow.icon")
+	CallItem *item = ((CallItem) data);
+	if ((cur_mode != Mode.ALL && !item->is_new) ||
+	    part != "elm.swallow.icon")
 	    return null;
 	string s;
-	switch (((CallItem) data).mode) {
+	switch (item->mode) {
 	case Mode.INCOMING: s = "received-mini.png"; break;
 	case Mode.OUTGOING: s = "made-mini.png"; break;
 	case Mode.MISSED: s = "missed-mini.png"; break;
