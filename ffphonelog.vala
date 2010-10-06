@@ -118,8 +118,20 @@ class CallItem
 	unowned Value? v = res.lookup("Peer");
 	if (v != null && v.holds(typeof(string)))
 	    peer = v.get_string();
+	mode = Mode.ALL;
 	timestamp = res.lookup("Timestamp").get_int();
 	answered = res.lookup("Answered").get_int() != 0;
+	v = res.lookup("Direction");
+	if (v != null && v.holds(typeof(string))) {
+	    switch (v.get_string()) {
+	    case "in":
+		mode = (answered) ? Mode.INCOMING : Mode.MISSED;
+		break;
+	    case "out":
+		mode = Mode.OUTGOING;
+		break;
+	    }
+	}
 	duration = (answered) ?
 	    res.lookup ("Duration").get_string().to_int() : 0;
 	v = res.lookup("@Contacts");
@@ -225,13 +237,15 @@ class CallsList
     public Genlist lst;
     GenlistItemClass itc;
     ModeItems mode_items[4];
-    Mode cur_mode;
+    static Mode cur_mode;
 
     public CallsList(Elm.Object parent)
     {
 	lst = new Genlist(parent);
 	itc.item_style = "double_label";
+	// XXX could libeflvala be fixed to avoid these casts
 	itc.func.label_get = (GenlistItemLabelGetFunc) get_label;
+	itc.func.icon_get = (GenlistItemIconGetFunc) get_icon;
 	lst.smart_callback_add("expand,request", expand);
 	lst.smart_callback_add("contract,request", contract);
 	for (int i = 0; i < mode_items.length; i++) {
@@ -359,6 +373,24 @@ class CallsList
     static string get_label(void *data, Elm.Object? obj, string part)
     {
 	return ((CallItem) data).get_label(part);
+    }
+
+    static Elm.Object? get_icon(void *data, Elm.Object? obj, string? part)
+    {
+	if (cur_mode != Mode.ALL || part != "elm.swallow.icon")
+	    return null;
+	string s;
+	switch (((CallItem) data).mode) {
+	case Mode.INCOMING: s = "received.png"; break;
+	case Mode.OUTGOING: s = "made.png"; break;
+	case Mode.MISSED: s = "missed.png"; break;
+	default: return null;
+	}
+	var ic = new Elm.Icon(obj);
+	ic.file_set(Path.build_filename(ICONS_DIR, s));
+	// elm.swallow.icon will not display without call to scale_set
+	ic.scale_set(false, false);
+	return ic;
     }
 
     public unowned CallItem? selected_item_get()
