@@ -109,16 +109,17 @@ void print_hash_table(HashTable<string,Value?> ht)
 
 class CallItem
 {
+    public Mode mode;
+    public bool is_new;
+    public int subitems;
+    public unowned CallItem next_subitem;
+
     string peer;
     int contact;
     string name;
-    public Mode mode;
     bool answered;
-    public bool is_new;
     time_t timestamp;
     time_t duration;
-    public int subitems;
-    public unowned CallItem next_subitem;
 
     public CallItem(HashTable<string,Value?> res)
     {
