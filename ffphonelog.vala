@@ -257,6 +257,7 @@ class ModeItems
     public RetrivingStatus status = RetrivingStatus.NOT_STARTED;
     public CallItem[] items = null;
     public int items_cnt = 0;
+    public CallQuery reply;
 }
 
 class CallsList
@@ -277,6 +278,14 @@ class CallsList
 	lst.smart_callback_add("contract,request", contract);
 	for (int i = 0; i < mode_items.length; i++) {
 	    mode_items[i] = new ModeItems();
+	}
+    }
+
+    public void dispose_resources()
+    {
+	for (int i = 0; i < mode_items.length; i++) {
+	    if (mode_items[i].reply != null)
+		mode_items[i].reply.Dispose();
 	}
     }
 
@@ -357,8 +366,9 @@ class CallsList
 	    break;
 	}
 	var path = yield calls.query(q);
-	var reply = (CallQuery) conn.get_object("org.freesmartphone.opimd", path);
-	int cnt = reply.get_result_count();
+	m.reply = (CallQuery) conn.get_object("org.freesmartphone.opimd",
+					      path);
+	int cnt = m.reply.get_result_count();
 	if (verbose) print(@"query: $path $cnt\n\n");
 	m.items = new CallItem[cnt];
 	int i = 0;
@@ -366,7 +376,7 @@ class CallsList
 	unowned GenlistItem parent_gl_item = null;
 	while (cnt > 0) {
 	    int chunk = (cnt > 10) ? 10 : cnt;
-	    var results = yield reply.get_multiple_results(chunk);
+	    var results = yield m.reply.get_multiple_results(chunk);
 	    foreach (var res in results) {
 		var item = m.items[i] = new CallItem(res);
 		yield item.resolve_phone_number();
@@ -394,7 +404,8 @@ class CallsList
 	    cnt -= chunk;
 	}
 	print(@"fetch_items: $((double)(clock() - t) / CLOCKS_PER_SEC)s\n");
-	reply.Dispose();
+	m.reply.Dispose();
+	m.reply = null;
     }
 
     static string get_label(void *data, Elm.Object? obj, string part)
@@ -465,7 +476,7 @@ class MainWin
 	if (win == null)
 	    die("cannot create main window");
 	win.title_set("PhoneLog");
-	win.smart_callback_add("delete-request", Elm.exit);
+	win.smart_callback_add("delete-request", close);
 
 	bg = new Bg(win);
 	bg.size_hint_weight_set(1.0, 1.0);
@@ -519,6 +530,12 @@ class MainWin
     public void show()
     {
 	win.show();
+    }
+
+    void close()
+    {
+	calls.dispose_resources();
+	Elm.exit();
     }
 
     Elm.Icon *icon(string name)
