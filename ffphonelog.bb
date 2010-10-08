@@ -5,6 +5,7 @@ MAINTAINER = "Łukasz Pankowski <lukpank@o2.pl>"
 SECTION = "x11/applications"
 PRIORITY = "optional"
 DEPENDS = "libeflvala"
+RDEPENDS = "phoneuid"
 PV = "0.0.1"
 PR = "r0"
 
