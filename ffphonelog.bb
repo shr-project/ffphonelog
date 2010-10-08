@@ -6,7 +6,7 @@ SECTION = "x11/applications"
 PRIORITY = "optional"
 DEPENDS = "libeflvala"
 RDEPENDS = "phoneuid"
-PV = "0.0.1"
+PV = "0.1"
 PR = "r0"
 
 SRC_URI = "file://ffphonelog-${PV}.tar.gz"

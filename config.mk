@@ -1,4 +1,4 @@
-VERSION = 0.0.1
+VERSION = 0.1
 
 PREFIX = /usr
 PKG_CFLAGS = `pkg-config --cflags elementary dbus-glib-1 gio-2.0`
