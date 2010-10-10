@@ -317,15 +317,8 @@ class CallsList
 	    fetch_items.begin(mode);
 	} else {
 	    for (int i = 0; i < m.items_cnt; i++) {
-		var item = m.items[i];
-		if (item.subitems != -1) {
-		    if (item.subitems > 0)
-			lst.item_append(itc, item, null,
-					GenlistItemFlags.SUBITEMS, null);
-		    else
-			lst.item_append(itc, item, null,
-					GenlistItemFlags.NONE, null);
-		}
+		if (m.items[i].subitems != -1)
+		    append_item(m.items[i]);
 	    }
 	}
     }
@@ -373,39 +366,41 @@ class CallsList
 	m.items = new CallItem[cnt];
 	int i = 0;
 	unowned CallItem parent = null, last_subitem = null;
-	unowned GenlistItem parent_gl_item = null;
 	while (cnt > 0) {
 	    int chunk = (cnt > 10) ? 10 : cnt;
 	    var results = yield m.reply.get_multiple_results(chunk);
 	    foreach (var res in results) {
 		var item = m.items[i] = new CallItem(res);
 		yield item.resolve_phone_number();
-		if (cur_mode == mode) {
-		    if (parent != null &&
-			parent.maybe_add_subitem(m.items[i], last_subitem)) {
-			if (last_subitem == null) {
-			    parent_gl_item.del();
-			    parent_gl_item = lst.item_append(
-				itc, parent, null,
-				GenlistItemFlags.SUBITEMS, null);
-			}
-			last_subitem = m.items[i];
-		    } else {
-			parent = m.items[i];
-			parent_gl_item = lst.item_append(
-			    itc, m.items[i], null,
-			    GenlistItemFlags.NONE, null);
-			last_subitem = null;
-		    }
+		if (parent != null &&
+		    parent.maybe_add_subitem(item, last_subitem)) {
+		    last_subitem = item;
+		} else {
+		    if (parent != null && cur_mode == mode)
+			append_item(parent);
+		    parent = item;
+		    last_subitem = null;
 		}
 		i++;
 		m.items_cnt++;
 	    }
 	    cnt -= chunk;
 	}
+	if (parent != null && cur_mode == mode)
+	    append_item(parent);
 	print(@"fetch_items: $((double)(clock() - t) / CLOCKS_PER_SEC)s\n");
 	m.reply.Dispose();
 	m.reply = null;
+    }
+
+    void append_item(CallItem item)
+    {
+	if (item.subitems > 0)
+	    lst.item_append(itc, item, null,
+			    GenlistItemFlags.SUBITEMS, null);
+	else
+	    lst.item_append(itc, item, null,
+			    GenlistItemFlags.NONE, null);
     }
 
     static string get_label(void *data, Elm.Object? obj, string part)
