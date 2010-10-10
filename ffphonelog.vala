@@ -29,6 +29,13 @@ interface GSMCall : GLib.Object
     throws DBus.Error;
 }
 
+[DBus (name = "org.freesmartphone.PIM.Call")]
+interface PIMCall : GLib.Object
+{
+    public abstract async void update(HashTable<string,Value?> fields)
+    throws DBus.Error;
+}
+
 [DBus (name = "org.freesmartphone.PIM.Calls")]
 interface Calls : GLib.Object
 {
@@ -114,6 +121,7 @@ class CallItem
     public int subitems;
     public unowned CallItem next_subitem;
 
+    int entry_id;
     string peer;
     int contact;
     string name;
@@ -127,6 +135,8 @@ class CallItem
 	unowned Value? v = res.lookup("Peer");
 	if (v != null && v.holds(typeof(string)))
 	    peer = v.get_string();
+	v = res.lookup("EntryId");
+	entry_id = (v != null && v.holds(typeof(int))) ? v.get_int() : -1;
 	mode = Mode.ALL;
 	timestamp = res.lookup("Timestamp").get_int();
 	answered = res.lookup("Answered").get_int() != 0;
@@ -192,6 +202,18 @@ class CallItem
 	    return true;
 	} else {
 	    return false;
+	}
+    }
+
+    public async void mark_new_item_as_read()
+    {
+	if (entry_id == -1) {
+	    var o = (PIMCall) conn.get_object(
+		"org.freesmartphone.opimd",
+		@"/org/freesmartphone/PIM/Calls/$entry_id");
+	    var fields = new HashTable<string,Value?>(null, null);
+	    fields.insert("New", 0);
+	    o.update(fields);
 	}
     }
 
@@ -388,6 +410,12 @@ class CallsList
 	}
 	if (parent != null && cur_mode == mode)
 	    append_item(parent);
+	if (mode == Mode.MISSED) {
+	    for (i = 0; i < m.items_cnt; i++) {
+		if (m.items[i].is_new)
+		    m.items[i].mark_new_item_as_read();
+	    }
+	}
 	print(@"fetch_items: $((double)(clock() - t) / CLOCKS_PER_SEC)s\n");
 	m.reply.Dispose();
 	m.reply = null;
