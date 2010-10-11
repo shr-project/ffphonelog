@@ -207,7 +207,7 @@ class CallItem
 
     public async void mark_new_item_as_read()
     {
-	if (entry_id == -1) {
+	if (entry_id != -1) {
 	    var o = (PIMCall) conn.get_object(
 		"org.freesmartphone.opimd",
 		@"/org/freesmartphone/PIM/Calls/$entry_id");
