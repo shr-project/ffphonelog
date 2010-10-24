@@ -120,6 +120,7 @@ class CallItem
     public bool is_new;
     public int subitems;
     public unowned CallItem next_subitem;
+    public unowned ModeItems mode_items;
 
     int entry_id;
     string peer;
@@ -129,8 +130,9 @@ class CallItem
     time_t timestamp;
     time_t duration;
 
-    public CallItem(HashTable<string,Value?> res)
+    public CallItem(HashTable<string,Value?> res, ModeItems mode_items)
     {
+	this.mode_items = mode_items;
 	if (verbose) print_hash_table(res);
 	unowned Value? v = res.lookup("Peer");
 	if (v != null && v.holds(typeof(string)))
@@ -280,6 +282,11 @@ class ModeItems
     public CallItem[] items = null;
     public int items_cnt = 0;
     public CallQuery reply;
+    public unowned CallsList list;
+
+    public ModeItems(CallsList list) {
+	this.list = list;
+    }
 }
 
 class CallsList
@@ -287,7 +294,7 @@ class CallsList
     public Genlist lst;
     GenlistItemClass itc;
     ModeItems mode_items[4];
-    static Mode cur_mode;
+    Mode cur_mode;
 
     public CallsList(Elm.Object parent)
     {
@@ -299,7 +306,7 @@ class CallsList
 	lst.smart_callback_add("expand,request", expand);
 	lst.smart_callback_add("contract,request", contract);
 	for (int i = 0; i < mode_items.length; i++) {
-	    mode_items[i] = new ModeItems();
+	    mode_items[i] = new ModeItems(this);
 	}
     }
 
@@ -392,7 +399,7 @@ class CallsList
 	    int chunk = (cnt > 10) ? 10 : cnt;
 	    var results = yield m.reply.get_multiple_results(chunk);
 	    foreach (var res in results) {
-		var item = m.items[i] = new CallItem(res);
+		var item = m.items[i] = new CallItem(res, m);
 		yield item.resolve_phone_number();
 		if (parent != null &&
 		    parent.maybe_add_subitem(item, last_subitem)) {
@@ -439,7 +446,7 @@ class CallsList
     static Elm.Object? get_icon(void *data, Elm.Object? obj, string? part)
     {
 	CallItem *item = ((CallItem) data);
-	if ((cur_mode != Mode.ALL && !item->is_new) ||
+	if ((item->mode_items.list.cur_mode != Mode.ALL && !item->is_new) ||
 	    part != "elm.swallow.icon")
 	    return null;
 	string s;
