@@ -37,7 +37,7 @@ interface PIMCall : GLib.Object
 }
 
 [DBus (name = "org.freesmartphone.PIM.Calls")]
-interface Calls : GLib.Object
+interface PIMCalls : GLib.Object
 {
     public abstract async string query(HashTable<string,Value?> query)
     throws DBus.Error;
@@ -53,7 +53,7 @@ interface CallQuery : GLib.Object
 }
 
 [DBus (name = "org.freesmartphone.PIM.Contact")]
-interface Contact : GLib.Object
+interface PIMContact : GLib.Object
 {
     public abstract async HashTable<string,Value?> get_content()
     throws DBus.Error;
@@ -167,8 +167,8 @@ class CallItem
 	if (contact != -1) {
 	    var path = @"/org/freesmartphone/PIM/Contacts/$contact";
 	    if (verbose) print(@"$path\n");
-	    var o = (Contact) conn.get_object("org.freesmartphone.opimd",
-					      path);
+	    var o = (PIMContact) conn.get_object("org.freesmartphone.opimd",
+						 path);
 	    var r = yield o.get_content();
 	    if (verbose) print_hash_table(r);
 	    var v = r.lookup("Name");
@@ -357,8 +357,8 @@ class CallsList
 	    conn = DBus.Bus.get(DBus.BusType.SYSTEM);
 
 	var t = clock();
-	var calls = (Calls) conn.get_object("org.freesmartphone.opimd",
-					    "/org/freesmartphone/PIM/Calls");
+	var calls = (PIMCalls) conn.get_object("org.freesmartphone.opimd",
+					       "/org/freesmartphone/PIM/Calls");
 
 	var q = new HashTable<string,Value?>(null, null);
 	q.insert("_limit", 30);
