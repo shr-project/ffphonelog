@@ -59,7 +59,7 @@ ipk-info:
 	ls -lh ${IPK_DIR}/${IPK_BASENAME}
 
 autodetect-options:
-	echo -e "\n# update config.mk with" && \
-	bitbake -e | grep -E "^DEPLOY_DIR_IPK=|^BASE_PACKAGE_ARCH="
+	@echo "# update config.mk with" && \
+	bitbake -e | grep -E "^DEPLOY_DIR_IPK=|^BASE_PACKAGE_ARCH=|^DISTRO_PR="
 
 .PHONY: all clean dist install ipk ipk-install ipk-info autodetect-options
