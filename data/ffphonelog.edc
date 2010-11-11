@@ -15,4 +15,16 @@ collections {
       images.image: "general.png" COMP; parts { part { name: "base";
 	 description { state: "default" 0.0; aspect: 1.0 1.0; aspect_preference: BOTH;
 	    image.normal: "general.png"; } } } }
+   group { name: "elm/icon/received-call-mini/default"; alias: "elm/icon/toolbar/received-call-mini/default"; min: 32 24; max: 32 24;
+      images.image: "received.png" COMP; parts { part { name: "base";
+	 description { state: "default" 0.0; aspect: 1.0 1.0; aspect_preference: BOTH;
+	    image.normal: "received.png"; } } } }
+   group { name: "elm/icon/made-call-mini/default"; alias: "elm/icon/toolbar/made-call-mini/default"; min: 32 24; max: 32 24;
+      images.image: "made.png" COMP; parts { part { name: "base";
+	 description { state: "default" 0.0; aspect: 1.0 1.0; aspect_preference: BOTH;
+	    image.normal: "made.png"; } } } }
+   group { name: "elm/icon/missed-call-mini/default"; alias: "elm/icon/toolbar/missed-call-mini/default"; min: 32 20; max: 32 20;
+      images.image: "missed.png" COMP; parts { part { name: "base";
+	 description { state: "default" 0.0; aspect: 1.0 1.0; aspect_preference: BOTH;
+	    image.normal: "missed.png"; } } } }
 }

@@ -453,13 +453,13 @@ class CallsList
 	    return null;
 	string s;
 	switch (item->mode) {
-	case Mode.INCOMING: s = "received-mini.png"; break;
-	case Mode.OUTGOING: s = "made-mini.png"; break;
-	case Mode.MISSED: s = "missed-mini.png"; break;
+	case Mode.INCOMING: s = "received-call-mini"; break;
+	case Mode.OUTGOING: s = "made-call-mini"; break;
+	case Mode.MISSED: s = "missed-call-mini"; break;
 	default: return null;
 	}
 	var ic = new Elm.Icon(obj);
-	ic.file_set(Path.build_filename(ICONS_DIR, s));
+	ic.standard_set(s);
 	// elm.swallow.icon will not display without call to scale_set
 	ic.scale_set(false, false);
 	return ic;
