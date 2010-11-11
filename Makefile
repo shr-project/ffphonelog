@@ -3,7 +3,7 @@ include config.mk
 SRC=ffphonelog.vala
 OBJ=ffphonelog.o
 
-all: ffphonelog
+all: ffphonelog data/ffphonelog.edj
 
 ffphonelog: ${OBJ}
 	${CC} -o $@ ${LDFLAGS} ${PKG_LIBS} ${OBJ}
@@ -15,14 +15,17 @@ ffphonelog.c: ${SRC}
 	valac -C ${VALAFLAGS} ${SRC}
 	touch ffphonelog.c
 
+data/ffphonelog.edj: data/ffphonelog.edc
+	edje_cc -id data $< $@
+
 clean:
-	rm -f ffphonelog ${OBJ} ffphonelog.c
+	rm -f ffphonelog ${OBJ} ffphonelog.c data/ffphonelog.edj
 
 dist:
 	mkdir -p ffphonelog-${VERSION}/data
 	cp Makefile config.mk ffphonelog.vala ffphonelog.bb \
 		 ffphonelog-${VERSION}
-	cp data/ffphonelog.desktop data/ffphonelog.png \
+	cp data/ffphonelog.desktop data/ffphonelog.png data/ffphonelog.edc \
 		data/general.png data/made.png data/missed.png \
 		data/received.png data/made-mini.png \
 		data/missed-mini.png data/received-mini.png \
@@ -39,8 +42,8 @@ install:
 	install -d ${DESTDIR}${PREFIX}/share/pixmaps
 	install -m 644 data/ffphonelog.png ${DESTDIR}${PREFIX}/share/pixmaps
 	install -d ${DESTDIR}${PREFIX}/share/ffphonelog/icons
-	install -m 644 data/general.png data/made.png data/missed.png \
-		data/received.png data/made-mini.png \
+	install -m 644 data/ffphonelog.edj ${DESTDIR}${PREFIX}/share/ffphonelog
+	install -m 644 data/made-mini.png \
 		data/missed-mini.png data/received-mini.png \
 		${DESTDIR}${PREFIX}/share/ffphonelog/icons
 

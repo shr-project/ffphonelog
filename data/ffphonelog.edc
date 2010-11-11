@@ -1,0 +1,18 @@
+collections {
+   group { name: "elm/icon/received-call/default"; alias: "elm/icon/toolbar/received-call/default"; min: 32 32;
+      images.image: "received.png" COMP; parts { part { name: "base";
+	 description { state: "default" 0.0; aspect: 1.0 1.0; aspect_preference: BOTH;
+	    image.normal: "received.png"; } } } }
+   group { name: "elm/icon/made-call/default"; alias: "elm/icon/toolbar/made-call/default"; min: 32 32;
+      images.image: "made.png" COMP; parts { part { name: "base";
+	 description { state: "default" 0.0; aspect: 1.0 1.0; aspect_preference: BOTH;
+	    image.normal: "made.png"; } } } }
+   group { name: "elm/icon/missed-call/default"; alias: "elm/icon/toolbar/missed-call/default"; min: 32 32;
+      images.image: "missed.png" COMP; parts { part { name: "base";
+	 description { state: "default" 0.0; aspect: 1.0 1.0; aspect_preference: BOTH;
+	    image.normal: "missed.png"; } } } }
+   group { name: "elm/icon/general-call/default"; alias: "elm/icon/toolbar/general-call/default"; min: 32 32;
+      images.image: "general.png" COMP; parts { part { name: "base";
+	 description { state: "default" 0.0; aspect: 1.0 1.0; aspect_preference: BOTH;
+	    image.normal: "general.png"; } } } }
+}

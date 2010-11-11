@@ -17,10 +17,12 @@
 
 using Elm;
 
+const string PKGDATADIR = "/usr/share/ffphonelog";
 const string ICONS_DIR = "/usr/share/ffphonelog/icons";
 
 extern long clock();
 extern const int CLOCKS_PER_SEC;
+extern void elm_theme_extension_add(Elm.Theme? th, string item);
 
 [DBus (name = "org.freesmartphone.GSM.Call")]
 interface GSMCall : GLib.Object
@@ -519,7 +521,6 @@ class MainWin
 	bx.show();
 
 	tb = new Toolbar(win);
-	tb.scrollable_set(false);
 	tb.size_hint_weight_set(0.0, 0.0);
 	tb.size_hint_align_set(Evas.Hint.FILL, 0.0);
 	bx.pack_end(tb);
@@ -532,15 +533,15 @@ class MainWin
 	bx.pack_end(calls.lst);
 	calls.lst.show();
 
-	(void) tb.item_add(icon("received.png"), "In",
-			   () => calls.switch_to_mode(Mode.INCOMING));
-	(void) tb.item_add(icon("made.png"), "Out",
-			   () => calls.switch_to_mode(Mode.OUTGOING));
-	((ToolbarItem *) tb.item_add(
-	    icon("missed.png"), "Missed",
-	    () => calls.switch_to_mode(Mode.MISSED)))->select();
-	(void) tb.item_add(icon("general.png"), "All",
-			   () => calls.switch_to_mode(Mode.ALL));
+	(void) tb.append("received-call", "In",
+			 () => calls.switch_to_mode(Mode.INCOMING));
+	(void) tb.append("made-call", "Out",
+			 () => calls.switch_to_mode(Mode.OUTGOING));
+	((ToolbarItem *) tb.append(
+	    "missed-call", "Missed",
+	    () => calls.switch_to_mode(Mode.MISSED)))->selected_set(true);
+	(void) tb.append("general-call", "All",
+			 () => calls.switch_to_mode(Mode.ALL));
 
 	bx2 = new Box(win);
 	bx2.size_hint_align_set(-1.0, -1.0);
@@ -568,13 +569,6 @@ class MainWin
 	Elm.exit();
     }
 
-    Elm.Icon *icon(string name)
-    {
-	Elm.Icon *ic = new Elm.Icon(win);
-	ic->file_set(Path.build_filename(ICONS_DIR, name));
-	return ic;
-    }
-
     void add_button(string label, Evas.Callback cb)
     {
 	Button *bt = new Button(win);
@@ -592,6 +586,8 @@ void main(string[] args)
     Environment.set_prgname(Path.get_basename(args[0]));
     verbose = ("-v" in args) || ("--verbose" in args);
     Elm.init(args);
+    elm_theme_extension_add(
+	null, Path.build_filename(PKGDATADIR, "ffphonelog.edj"));
     Ecore.MainLoop.glib_integrate();
     var mw = new MainWin();
     mw.show();
