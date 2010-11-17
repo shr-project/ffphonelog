@@ -17,9 +17,6 @@
 
 using Elm;
 
-const string PKGDATADIR = "/usr/share/ffphonelog";
-const string ICONS_DIR = "/usr/share/ffphonelog/icons";
-
 extern long clock();
 extern const int CLOCKS_PER_SEC;
 extern void elm_theme_extension_add(Elm.Theme? th, string item);
@@ -581,13 +578,24 @@ class MainWin
     }
 }
 
+string get_pkg_data_dir(string pkg_name)
+{
+    foreach (unowned string dir in Environment.get_system_data_dirs()) {
+	string path = Path.build_filename(dir, pkg_name);
+	if (FileUtils.test(path, FileTest.IS_DIR))
+	    return path;
+    }
+    return Path.build_filename("/usr/share/", pkg_name);
+}
+
 void main(string[] args)
 {
     Environment.set_prgname(Path.get_basename(args[0]));
     verbose = ("-v" in args) || ("--verbose" in args);
     Elm.init(args);
     elm_theme_extension_add(
-	null, Path.build_filename(PKGDATADIR, "ffphonelog.edj"));
+	null, Path.build_filename(get_pkg_data_dir("ffphonelog"),
+				  "ffphonelog.edj"));
     Ecore.MainLoop.glib_integrate();
     var mw = new MainWin();
     mw.show();
