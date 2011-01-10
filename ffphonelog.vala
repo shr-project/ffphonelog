@@ -140,7 +140,7 @@ class CallItem
 	entry_id = (v != null && v.holds(typeof(int))) ? v.get_int() : -1;
 	mode = Mode.ALL;
 	timestamp = res.lookup("Timestamp").get_int();
-	answered = res.lookup("Answered").get_int() != 0;
+	answered = ((v = res.lookup("Answered")) != null && v.get_int() != 0);
 	v = res.lookup("Direction");
 	if (v != null && v.holds(typeof(string))) {
 	    switch (v.get_string()) {
