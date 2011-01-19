@@ -1,10 +1,16 @@
 VERSION = 0.1
 
 PREFIX = /usr/local
+DATADIR = ${PREFIX}/share
+PKGDATADIR = ${DATADIR}/ffphonelog
+
+CPPFLAGS = -DPKGDATADIR=\"${PKGDATADIR}\"
 PKG_CFLAGS = `pkg-config --cflags elementary dbus-glib-1 gio-2.0`
 PKG_LIBS = `pkg-config --libs elementary dbus-glib-1 gio-2.0`
 VALAFLAGS = --pkg elm --pkg dbus-glib-1 --pkg posix --pkg gio-2.0
 CC=cc
+CFLAGS = ${CPPFLAGS} ${PKG_CFLAGS}
+LDFLAGS = ${PKG_LIBS}
 
 OE_TOPDIR = `which bitbake | sed s:/bitbake/bin/bitbake::`
 NEO=192.168.0.202

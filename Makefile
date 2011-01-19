@@ -6,10 +6,10 @@ OBJ=ffphonelog.o
 all: ffphonelog data/ffphonelog.edj
 
 ffphonelog: ${OBJ}
-	${CC} -o $@ ${LDFLAGS} ${PKG_LIBS} ${OBJ}
+	${CC} -o $@ ${LDFLAGS} ${OBJ}
 
 .c.o:
-	${CC} -c ${CFLAGS} ${PKG_CFLAGS} $<
+	${CC} -c ${CFLAGS} $<
 
 ffphonelog.c: ${SRC}
 	valac -C ${VALAFLAGS} ${SRC}
@@ -34,13 +34,13 @@ dist:
 install:
 	install -d ${DESTDIR}${PREFIX}/bin
 	install -m 755  ffphonelog ${DESTDIR}${PREFIX}/bin
-	install -d ${DESTDIR}${PREFIX}/share/applications
+	install -d ${DESTDIR}${DATADIR}/applications
 	install -m 644 data/ffphonelog.desktop \
-		${DESTDIR}${PREFIX}/share/applications
-	install -d ${DESTDIR}${PREFIX}/share/pixmaps
-	install -m 644 data/ffphonelog.png ${DESTDIR}${PREFIX}/share/pixmaps
-	install -d ${DESTDIR}${PREFIX}/share/ffphonelog
-	install -m 644 data/ffphonelog.edj ${DESTDIR}${PREFIX}/share/ffphonelog
+		${DESTDIR}${DATADIR}/applications
+	install -d ${DESTDIR}${DATADIR}/pixmaps
+	install -m 644 data/ffphonelog.png ${DESTDIR}${DATADIR}/pixmaps
+	install -d ${DESTDIR}${DATADIR}/ffphonelog
+	install -m 644 data/ffphonelog.edj ${DESTDIR}${DATADIR}/ffphonelog
 
 do_%:
 	bitbake -c $* -b ffphonelog.bb

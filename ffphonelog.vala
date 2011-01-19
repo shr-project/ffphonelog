@@ -17,8 +17,7 @@
 
 using Elm;
 
-const string PKGDATADIR = "/usr/share/ffphonelog";
-const string ICONS_DIR = "/usr/share/ffphonelog/icons";
+extern const string PKGDATADIR;
 
 extern long clock();
 extern const int CLOCKS_PER_SEC;
