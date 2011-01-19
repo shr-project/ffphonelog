@@ -1,6 +1,6 @@
 VERSION = 0.1
 
-PREFIX = /usr
+PREFIX = /usr/local
 PKG_CFLAGS = `pkg-config --cflags elementary dbus-glib-1 gio-2.0`
 PKG_LIBS = `pkg-config --libs elementary dbus-glib-1 gio-2.0`
 VALAFLAGS = --pkg elm --pkg dbus-glib-1 --pkg posix --pkg gio-2.0
