@@ -14,6 +14,13 @@ SRC_URI = "file://ffphonelog-${PV}.tar.gz"
 PACKAGES = "${PN} ${PN}-dbg"
 FILES_${PN} += "${datadir}/applications ${datadir}/pixmaps"
 
+EXTRA_OEMAKE = " \
+	CC='${CC}' \
+	CFLAGS_APPEND='${CFLAGS}' \
+	LDFLAGS_APPEND='${LDFLAGS}' \
+	DESTDIR='${D}' \
+	PREFIX=/usr"
+
 do_install() {
-	oe_runmake install DESTDIR=${D}
+	oe_runmake install
 }
