@@ -148,8 +148,12 @@ class CallItem
 	duration = (answered) ?
 	    res.lookup ("Duration").get_string().to_int() : 0;
 	v = res.lookup("@Contacts");
-	if (v != null && v.get_type_string() == "a{sv}")
-	    resolve_phone_number(v);
+	if (v != null) {
+	    if (v.get_type_string() == "a{sv}")
+		resolve_phone_number(v);
+	    else if (v.get_type_string() == "aa{sv}" && v.n_children() > 0)
+		resolve_phone_number(v.get_child_value(0));
+	}
     }
 
     public void resolve_phone_number(Variant contact)
