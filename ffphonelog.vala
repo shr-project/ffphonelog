@@ -26,53 +26,52 @@ extern void elm_theme_extension_add(Elm.Theme? th, string item);
 [DBus (name = "org.freesmartphone.GSM.Call")]
 interface GSMCall : GLib.Object
 {
-    public abstract int initiate(string number, string type)
-    throws DBus.Error;
+    public abstract int initiate(string number, string type) throws IOError;
 }
 
 [DBus (name = "org.freesmartphone.PIM.Call")]
 interface PIMCall : GLib.Object
 {
-    public abstract async void update(HashTable<string,Value?> fields)
-    throws DBus.Error;
+    public abstract async
+    void update(HashTable<string,Variant> fields) throws IOError;
 }
 
 [DBus (name = "org.freesmartphone.PIM.Calls")]
 interface PIMCalls : GLib.Object
 {
-    public abstract async string query(HashTable<string,Value?> query)
-    throws DBus.Error;
+    public abstract async
+    string query(HashTable<string,Variant> query) throws IOError;
 }
 
 [DBus (name = "org.freesmartphone.PIM.CallQuery")]
 interface CallQuery : GLib.Object
 {
-    public abstract void Dispose() throws DBus.Error;
-    public abstract int get_result_count() throws DBus.Error;
-    public abstract async HashTable<string,Value?>[]
-    get_multiple_results(int i) throws DBus.Error;
+    public abstract void Dispose() throws IOError;
+    public abstract int get_result_count() throws IOError;
+    public abstract async
+    HashTable<string,Variant>[] get_multiple_results(int i) throws IOError;
 }
 
 [DBus (name = "org.freesmartphone.PIM.Contact")]
 interface PIMContact : GLib.Object
 {
-    public abstract async HashTable<string,Value?> get_content()
-    throws DBus.Error;
+    public abstract async
+    HashTable<string,Variant> get_content() throws IOError;
 }
 
 [DBus (name = "org.shr.phoneui.Contacts")]
 interface PhoneuiContacts : GLib.Object
 {
-    public abstract void edit_contact(string path) throws DBus.Error;
-    public abstract string create_contact(HashTable<string,Value?> values)
-    throws DBus.Error;
+    public abstract void edit_contact(string path) throws IOError;
+    public abstract
+    string create_contact(HashTable<string,Variant> values) throws IOError;
 }
 
 [DBus (name = "org.shr.phoneui.Messages")]
 interface PhoneuiMessages : GLib.Object
 {
-    public abstract void create_message(HashTable<string,Value?> options)
-    throws DBus.Error;
+    public abstract
+    void create_message(HashTable<string,Variant> options) throws IOError;
 }
 
 enum Mode
@@ -90,7 +89,6 @@ enum RetrivingStatus
 }
 
 
-DBus.Connection conn;
 bool verbose = false;
 
 
@@ -100,19 +98,14 @@ void die(string msg)
     Posix.exit(1);
 }
 
-void print_hash_table(HashTable<string,Value?> ht)
+void print_hash_table(HashTable<string,Variant> ht)
 {
     ht.foreach((key, val) => {
-	    unowned Value? v = (Value?) val;
-	    string s = "?";
-	    string type = v.type_name() ?? @"(null type name)";
-	    if (v.holds(typeof(string)))
-		s = (string) v;
-	    else if (v.holds(typeof(int)))
-		s = v.get_int().to_string();
-	    print(@"  $((string)key) : $type = $s\n");
+	    unowned Variant v = (Variant) val;
+	    print("%s : %s = %s\n", (string) key, v.get_type_string(),
+		  v.print(true));
 	});
-    print("\n");
+    stdout.putc('\n');
 }
 
 class CallItem
@@ -131,27 +124,27 @@ class CallItem
     time_t timestamp;
     time_t duration;
 
-    public CallItem(HashTable<string,Value?> res, ModeItems mode_items)
+    public CallItem(HashTable<string,Variant> res, ModeItems mode_items)
     {
 	this.mode_items = mode_items;
 	if (verbose) print_hash_table(res);
-	unowned Value? v = res.lookup("Peer");
-	if (v != null && v.holds(typeof(string)))
+	unowned Variant? v = res.lookup("Peer");
+	if (v != null && v.is_of_type(VariantType.STRING))
 	    peer = v.get_string();
 	v = res.lookup("EntryId");
-	entry_id = (v != null && v.holds(typeof(int))) ? v.get_int() : -1;
+	entry_id = (v != null && v.is_of_type(VariantType.INT32)) ? v.get_int32() : -1;
 	mode = Mode.ALL;
-	timestamp = res.lookup("Timestamp").get_int();
-	answered = ((v = res.lookup("Answered")) != null && v.get_int() != 0);
+	timestamp = res.lookup("Timestamp").get_int32();
+	answered = ((v = res.lookup("Answered")) != null && v.get_int32() != 0);
 	v = res.lookup("Direction");
-	if (v != null && v.holds(typeof(string))) {
+	if (v != null && v.is_of_type(VariantType.STRING)) {
 	    switch (v.get_string()) {
 	    case "in":
 		mode = (answered) ? Mode.INCOMING : Mode.MISSED;
 		if (mode == Mode.MISSED) {
 		    v = res.lookup("New");
-		    if (v != null && v.holds(typeof(int)))
-			is_new = v.get_int() != 0;
+		    if (v != null && v.is_of_type(VariantType.INT32))
+			is_new = v.get_int32() != 0;
 		}
 		break;
 	    case "out":
@@ -162,7 +155,7 @@ class CallItem
 	duration = (answered) ?
 	    res.lookup ("Duration").get_string().to_int() : 0;
 	v = res.lookup("@Contacts");
-	contact = (v != null && v.holds(typeof(int))) ? v.get_int() : -1;
+	contact = (v != null && v.is_of_type(VariantType.INT32)) ? v.get_int32() : -1;
     }
 
     public async void resolve_phone_number()
@@ -170,21 +163,21 @@ class CallItem
 	if (contact != -1) {
 	    var path = @"/org/freesmartphone/PIM/Contacts/$contact";
 	    if (verbose) print(@"$path\n");
-	    var o = (PIMContact) conn.get_object("org.freesmartphone.opimd",
-						 path);
+	    PIMContact o = Bus.get_proxy_sync(
+		BusType.SYSTEM, "org.freesmartphone.opimd", path);
 	    var r = yield o.get_content();
 	    if (verbose) print_hash_table(r);
 	    var v = r.lookup("Name");
-	    if (v != null && v.holds(typeof(string)))
+	    if (v != null && v.is_of_type(VariantType.STRING))
 		name = v.get_string();
 	    v = r.lookup("Surname");
-	    if (v != null && v.holds(typeof(string))) {
+	    if (v != null && v.is_of_type(VariantType.STRING)) {
 		var surname = v.get_string();
 		name = (name != null) ? @"$name $surname" : surname;
 	    }
 	    if (name == null) {
 		v = r.lookup("Nickname");
-		name = (v != null && v.holds(typeof(string))) ?
+		name = (v != null && v.is_of_type(VariantType.STRING)) ?
 		    v.get_string() : "???";
 	    }
 	}
@@ -211,10 +204,10 @@ class CallItem
     public async void mark_new_item_as_read()
     {
 	if (entry_id != -1) {
-	    var o = (PIMCall) conn.get_object(
-		"org.freesmartphone.opimd",
-		@"/org/freesmartphone/PIM/Calls/$entry_id");
-	    var fields = new HashTable<string,Value?>(null, null);
+	    var path = @"/org/freesmartphone/PIM/Calls/$entry_id";
+	    PIMCall o = Bus.get_proxy_sync(
+		BusType.SYSTEM, "org.freesmartphone.opimd", path);
+	    var fields = new HashTable<string,Variant>(null, null);
 	    fields.insert("New", 0);
 	    o.update(fields);
 	}
@@ -239,13 +232,13 @@ class CallItem
 
     public void edit_add()
     {
-	var o = (PhoneuiContacts) conn.get_object(
+	PhoneuiContacts o = Bus.get_proxy_sync(BusType.SYSTEM,
 	    "org.shr.phoneui", "/org/shr/phoneui/Contacts");
 	if (contact != -1) {
 	    o.edit_contact(@"/org/freesmartphone/PIM/Contacts/$contact");
 	} else {
 	    // XXX create_contact seems to be broken in phoneui?
-	    var fields = new HashTable<string,Value?>(null, null);
+	    var fields = new HashTable<string,Variant>(null, null);
 	    fields.insert("Name", "");
 	    fields.insert("Phone", peer);
 	    o.create_contact(fields);
@@ -254,22 +247,24 @@ class CallItem
 
     public void call()
     {
-	if (peer != null)
-	    ((GSMCall) conn.get_object(
-		"org.freesmartphone.ogsmd",
-		"/org/freesmartphone/GSM/Device")).initiate(peer, "voice");
-	else
+	if (peer != null) {
+	    GSMCall o = Bus.get_proxy_sync(BusType.SYSTEM,
+					   "org.freesmartphone.ogsmd",
+					   "/org/freesmartphone/GSM/Device");
+	    o.initiate(peer, "voice");
+	} else {
 	    message("CallItem.call: will not initiate a call: peer is null\n");
+	}
     }
 
     public void create_message()
     {
 	if (peer != null) {
-	    var q = new HashTable<string,Value?>(null, null);
+	    var q = new HashTable<string,Variant>(null, null);
 	    q.insert("Phone", peer);
-	    ((PhoneuiMessages) conn.get_object(
-		"org.shr.phoneui",
-		"/org/shr/phoneui/Messages")).create_message(q);
+	    PhoneuiMessages o = Bus.get_proxy_sync(
+		BusType.SYSTEM, "org.shr.phoneui", "/org/shr/phoneui/Messages");
+	    o.create_message(q);
 	} else {
 	    message("create_message: skipped: peer is null\n");
 	}
@@ -361,14 +356,12 @@ class CallsList
 	(void) new Ecore.Idler(fetch_items.callback);
 	yield;
 
-	if (conn == null)
-	    conn = DBus.Bus.get(DBus.BusType.SYSTEM);
-
 	var t = clock();
-	var calls = (PIMCalls) conn.get_object("org.freesmartphone.opimd",
-					       "/org/freesmartphone/PIM/Calls");
+	PIMCalls calls = Bus.get_proxy_sync(BusType.SYSTEM,
+					    "org.freesmartphone.opimd",
+					    "/org/freesmartphone/PIM/Calls");
 
-	var q = new HashTable<string,Value?>(null, null);
+	var q = new HashTable<string,Variant>(null, null);
 	q.insert("_limit", 30);
 	q.insert("_sortby", "Timestamp");
 	q.insert("_sortdesc", true);
@@ -389,8 +382,8 @@ class CallsList
 	    break;
 	}
 	var path = yield calls.query(q);
-	m.reply = (CallQuery) conn.get_object("org.freesmartphone.opimd",
-					      path);
+	m.reply = Bus.get_proxy_sync(BusType.SYSTEM,
+				     "org.freesmartphone.opimd", path);
 	int cnt = m.reply.get_result_count();
 	if (verbose) print(@"query: $path $cnt\n\n");
 	m.items = new CallItem[cnt];

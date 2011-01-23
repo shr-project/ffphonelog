@@ -5,9 +5,9 @@ DATADIR = ${PREFIX}/share
 PKGDATADIR = ${DATADIR}/ffphonelog
 
 CPPFLAGS = -DPKGDATADIR=\"${PKGDATADIR}\"
-PKG_CFLAGS = `pkg-config --cflags elementary dbus-glib-1 gio-2.0`
-PKG_LIBS = `pkg-config --libs elementary dbus-glib-1 gio-2.0`
-VALAFLAGS = --pkg elm --pkg dbus-glib-1 --pkg posix --pkg gio-2.0
+PKG_CFLAGS = `pkg-config --cflags elementary gio-2.0`
+PKG_LIBS = `pkg-config --libs elementary gio-2.0`
+VALAFLAGS = --pkg elm --pkg posix --pkg gio-2.0
 CC=cc
 CFLAGS = ${CPPFLAGS} ${PKG_CFLAGS} ${CFLAGS_APPEND}
 LDFLAGS = ${PKG_LIBS} ${LDFLAGS_APPEND}
