@@ -186,6 +186,7 @@ class CallItem
     {
 	if (mode == next.mode &&
 	    (contact != -1 && next.contact == contact ||
+	     contact == -1 && peer == null && next.peer == null ||
 	     peer != null && next.peer == peer)) {
 	    if (next_subitem == null)
 		next_subitem = next;
@@ -218,7 +219,7 @@ class CallItem
 	    if (name != null)
 		return @"$name$suffix    ($peer)";
 	    else
-		return @"$peer$suffix";
+		return (peer != null) ? @"$peer$suffix" : @"(unknown)$suffix";
 	} else if (part == "elm.text.sub") {
 	    var t = GLib.Time.local(timestamp).format("%a %F %T");
 	    return (answered) ? "%s,   %02u:%02u".printf(
