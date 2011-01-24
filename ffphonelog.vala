@@ -52,13 +52,6 @@ interface CallQuery : GLib.Object
     HashTable<string,Variant>[] get_multiple_results(int i) throws IOError;
 }
 
-[DBus (name = "org.freesmartphone.PIM.Contact")]
-interface PIMContact : GLib.Object
-{
-    public abstract async
-    HashTable<string,Variant> get_content() throws IOError;
-}
-
 [DBus (name = "org.shr.phoneui.Contacts")]
 interface PhoneuiContacts : GLib.Object
 {
@@ -118,7 +111,7 @@ class CallItem
 
     int entry_id;
     string peer;
-    int contact;
+    int contact = -1;
     string name;
     bool answered;
     time_t timestamp;
@@ -155,31 +148,32 @@ class CallItem
 	duration = (answered) ?
 	    res.lookup ("Duration").get_string().to_int() : 0;
 	v = res.lookup("@Contacts");
-	contact = (v != null && v.is_of_type(VariantType.INT32)) ? v.get_int32() : -1;
+	if (v != null && v.get_type_string() == "a{sv}")
+	    resolve_phone_number(v);
     }
 
-    public async void resolve_phone_number()
+    public void resolve_phone_number(Variant contact)
     {
-	if (contact != -1) {
-	    var path = @"/org/freesmartphone/PIM/Contacts/$contact";
-	    if (verbose) print(@"$path\n");
-	    PIMContact o = Bus.get_proxy_sync(
-		BusType.SYSTEM, "org.freesmartphone.opimd", path);
-	    var r = yield o.get_content();
-	    if (verbose) print_hash_table(r);
-	    var v = r.lookup("Name");
-	    if (v != null && v.is_of_type(VariantType.STRING))
-		name = v.get_string();
-	    v = r.lookup("Surname");
-	    if (v != null && v.is_of_type(VariantType.STRING)) {
-		var surname = v.get_string();
-		name = (name != null) ? @"$name $surname" : surname;
-	    }
-	    if (name == null) {
-		v = r.lookup("Nickname");
-		name = (v != null && v.is_of_type(VariantType.STRING)) ?
-		    v.get_string() : "???";
-	    }
+	var r = new HashTable<string,Variant>(str_hash, str_equal);
+	foreach (var sv in contact)
+	    r.insert(sv.get_child_value(0).dup_string(),
+		     sv.get_child_value(1).get_variant());
+	if (verbose) print_hash_table(r);
+	var v = r.lookup("EntryId");
+	if (v != null && v.is_of_type(VariantType.INT32))
+	    this.contact = v.get_int32();
+	v = r.lookup("Name");
+	if (v != null && v.is_of_type(VariantType.STRING))
+	    name = v.get_string();
+	v = r.lookup("Surname");
+	if (v != null && v.is_of_type(VariantType.STRING)) {
+	    var surname = v.get_string();
+	    name = (name != null) ? @"$name $surname" : surname;
+	}
+	if (name == null) {
+	    v = r.lookup("Nickname");
+	    name = (v != null && v.is_of_type(VariantType.STRING)) ?
+		v.get_string() : "???";
 	}
 	// XXX may also use Timezone from CallQuery result
     }
@@ -207,7 +201,7 @@ class CallItem
 	    var path = @"/org/freesmartphone/PIM/Calls/$entry_id";
 	    PIMCall o = Bus.get_proxy_sync(
 		BusType.SYSTEM, "org.freesmartphone.opimd", path);
-	    var fields = new HashTable<string,Variant>(null, null);
+	    var fields = new HashTable<string,Variant>(str_hash, str_equal);
 	    fields.insert("New", 0);
 	    o.update(fields);
 	}
@@ -238,7 +232,7 @@ class CallItem
 	    o.edit_contact(@"/org/freesmartphone/PIM/Contacts/$contact");
 	} else {
 	    // XXX create_contact seems to be broken in phoneui?
-	    var fields = new HashTable<string,Variant>(null, null);
+	    var fields = new HashTable<string,Variant>(str_hash, str_equal);
 	    fields.insert("Name", "");
 	    fields.insert("Phone", peer);
 	    o.create_contact(fields);
@@ -260,7 +254,7 @@ class CallItem
     public void create_message()
     {
 	if (peer != null) {
-	    var q = new HashTable<string,Variant>(null, null);
+	    var q = new HashTable<string,Variant>(str_hash, str_equal);
 	    q.insert("Phone", peer);
 	    PhoneuiMessages o = Bus.get_proxy_sync(
 		BusType.SYSTEM, "org.shr.phoneui", "/org/shr/phoneui/Messages");
@@ -361,11 +355,12 @@ class CallsList
 					    "org.freesmartphone.opimd",
 					    "/org/freesmartphone/PIM/Calls");
 
-	var q = new HashTable<string,Variant>(null, null);
+	var q = new HashTable<string,Variant>(str_hash, str_equal);
 	q.insert("_limit", 30);
 	q.insert("_sortby", "Timestamp");
 	q.insert("_sortdesc", true);
 	q.insert("_resolve_phonenumber", true);
+	q.insert("_retrieve_full_contact", true);
 	switch (mode) {
 	case Mode.INCOMING:
 	    q.insert("Direction", "in");
@@ -394,7 +389,6 @@ class CallsList
 	    var results = yield m.reply.get_multiple_results(chunk);
 	    foreach (var res in results) {
 		var item = m.items[i] = new CallItem(res, m);
-		yield item.resolve_phone_number();
 		if (parent != null &&
 		    parent.maybe_add_subitem(item, last_subitem)) {
 		    last_subitem = item;
