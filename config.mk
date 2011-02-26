@@ -4,15 +4,16 @@ PREFIX = /usr/local
 DATADIR = ${PREFIX}/share
 PKGDATADIR = ${DATADIR}/ffphonelog
 
-CPPFLAGS = -DPKGDATADIR=\"${PKGDATADIR}\"
-PKG_CFLAGS = `pkg-config --cflags elementary gio-2.0`
-PKG_LIBS = `pkg-config --libs elementary gio-2.0`
 VALAFLAGS = --pkg elm --pkg posix --pkg gio-2.0
-CC=cc
-CFLAGS = ${CPPFLAGS} ${PKG_CFLAGS} ${CFLAGS_APPEND}
-LDFLAGS = ${PKG_LIBS} ${LDFLAGS_APPEND}
+INCS = $(shell pkg-config --cflags elementary gio-2.0)
+LIBS = $(shell pkg-config --libs elementary gio-2.0)
 
-OE_TOPDIR = `which bitbake | sed s:/bitbake/bin/bitbake::`
+CPPFLAGS = -DPKGDATADIR=\"${PKGDATADIR}\"
+CC=cc
+CFLAGS = ${CPPFLAGS} ${INCS} ${CFLAGS_APPEND}
+LDFLAGS = ${LIBS} ${LDFLAGS_APPEND}
+
+OE_TOPDIR = $(shell which bitbake | sed s:/bitbake/bin/bitbake::)
 NEO=192.168.0.202
 
 # can be autodetected with: make autodetect-options
