@@ -294,6 +294,7 @@ class CallsList
     public CallsList(Elm.Object parent)
     {
 	lst = new Genlist(parent);
+	lst.horizontal_mode_set(ListMode.COMPRESS);
 	itc.item_style = "double_label";
 	// XXX could libeflvala be fixed to avoid these casts
 	itc.func.label_get = (GenlistItemLabelGetFunc) get_label;
