@@ -564,7 +564,7 @@ class MainWin
     void add_button(string label, Evas.Callback cb)
     {
 	Button *bt = new Button(win);
-	bt->label_set(label);
+	bt->text_set(label);
 	bt->smart_callback_add("clicked", cb);
 	bt->size_hint_weight_set(1.0, 0.0);
 	bt->size_hint_align_set(-1.0, -1.0);
