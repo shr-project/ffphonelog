@@ -4,7 +4,7 @@ PREFIX = /usr/local
 DATADIR = ${PREFIX}/share
 PKGDATADIR = ${DATADIR}/ffphonelog
 
-VALAFLAGS = --pkg elm --pkg posix --pkg gio-2.0
+VALAFLAGS = --pkg elementary --pkg posix --pkg gio-2.0
 INCS = $(shell pkg-config --cflags elementary ecore evas gio-2.0)
 LIBS = $(shell pkg-config --libs elementary ecore evas gio-2.0)
 
