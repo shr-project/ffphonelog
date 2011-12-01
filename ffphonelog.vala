@@ -297,7 +297,7 @@ class CallsList
 	lst.horizontal_mode_set(ListMode.COMPRESS);
 	itc.item_style = "double_label";
 	// XXX could libeflvala be fixed to avoid these casts
-	itc.func.label_get = (GenlistItemLabelGetFunc) get_label;
+	itc.func.text_get = (GenlistItemTextGetFunc) get_text;
 	itc.func.content_get = (GenlistItemContentGetFunc) get_content;
 	lst.smart_callback_add("expand,request", expand);
 	lst.smart_callback_add("contract,request", contract);
@@ -432,7 +432,7 @@ class CallsList
 			    GenlistItemFlags.NONE, null);
     }
 
-    static string get_label(void *data, Elm.Object? obj, string part)
+    static string get_text(void *data, Elm.Object? obj, string part)
     {
 	return ((CallItem) data).get_label(part);
     }
