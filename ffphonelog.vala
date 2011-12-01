@@ -538,7 +538,7 @@ class MainWin
 	bx2 = new Box(win);
 	bx2.size_hint_align_set(-1.0, -1.0);
 	bx2.horizontal_set(true);
-	bx2.homogenous_set(true);
+	bx2.homogeneous_set(true);
 	bx2.show();
 
 	add_button("Edit/Add", calls.edit_add_selected_item);
