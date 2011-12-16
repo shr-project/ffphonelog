@@ -500,7 +500,7 @@ class MainWin
 	if (win == null)
 	    die("cannot create main window");
 	win.title_set("PhoneLog");
-	win.smart_callback_add("delete-request", close);
+	win.smart_callback_add("delete,request", close);
 
 	bg = new Bg(win);
 	bg.size_hint_weight_set(1.0, 1.0);
