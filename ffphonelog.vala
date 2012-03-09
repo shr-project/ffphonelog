@@ -146,7 +146,7 @@ class CallItem
 	    }
 	}
 	duration = (answered) ?
-	    res.lookup ("Duration").get_string().to_int() : 0;
+	    int.parse(res.lookup ("Duration").get_string()) : 0;
 	v = res.lookup("@Contacts");
 	if (v != null) {
 	    if (v.get_type_string() == "a{sv}")
@@ -286,15 +286,16 @@ class ModeItems
 
 class CallsList
 {
-    public Genlist lst;
+    public unowned Genlist? lst;
     GenlistItemClass itc;
     ModeItems mode_items[4];
     Mode cur_mode;
 
     public CallsList(Elm.Object parent)
     {
-	lst = new Genlist(parent);
-	lst.horizontal_mode_set(ListMode.COMPRESS);
+	lst = Genlist.add(parent);
+	lst.mode_set(ListMode.COMPRESS);
+	itc = new GenlistItemClass();
 	itc.item_style = "double_label";
 	// XXX could libeflvala be fixed to avoid these casts
 	itc.func.text_get = (GenlistItemTextGetFunc) get_text;
@@ -316,19 +317,19 @@ class CallsList
 
     void expand(Evas.Object obj, void *event_info)
     {
-	var it = (GenlistItem *) event_info;
-	it->expanded_set(true);
+	unowned GenlistItem? it = (GenlistItem) event_info;
+	it.expanded_set(true);
 	for (unowned CallItem subitem =
-		 ((CallItem) it->data_get()).next_subitem;
+		 ((CallItem) it.data_get()).next_subitem;
 	     subitem != null; subitem = subitem.next_subitem) {
-	    lst.item_append(ref itc, subitem, it, GenlistItemFlags.NONE, null);
+	    lst.item_append(itc, subitem, it, GenlistItemType.NONE, null);
 	}
     }
     void contract(Evas.Object obj, void *event_info)
     {
-	var it = (GenlistItem *) event_info;
-	it->subitems_clear();
-	it->expanded_set(false);
+	unowned GenlistItem? it = (GenlistItem) event_info;
+	it.subitems_clear();
+	it.expanded_set(false);
     }
 
     public void switch_to_mode(Mode mode)
@@ -425,11 +426,11 @@ class CallsList
     void append_item(CallItem item)
     {
 	if (item.subitems > 0)
-	    lst.item_append(ref itc, item, null,
-			    GenlistItemFlags.SUBITEMS, null);
+	    lst.item_append(itc, item, null,
+			    GenlistItemType.SUBITEMS, null);
 	else
-	    lst.item_append(ref itc, item, null,
-			    GenlistItemFlags.NONE, null);
+	    lst.item_append(itc, item, null,
+			    GenlistItemType.NONE, null);
     }
 
     static string get_text(void *data, Elm.Object? obj, string part)
@@ -437,29 +438,30 @@ class CallsList
 	return ((CallItem) data).get_label(part);
     }
 
-    static Elm.Object? get_content(void *data, Elm.Object? obj, string? part)
+    static unowned Elm.Object? get_content(void *data, Elm.Object? obj, string? part)
     {
-	CallItem *item = ((CallItem) data);
-	if ((item->mode_items.list.cur_mode != Mode.ALL && !item->is_new) ||
+	CallItem item = ((CallItem) data);
+	if ((item.mode_items.list.cur_mode != Mode.ALL && !item.is_new) ||
 	    part != "elm.swallow.icon")
 	    return null;
 	string s;
-	switch (item->mode) {
+	switch (item.mode) {
 	case Mode.INCOMING: s = "received-call-mini"; break;
 	case Mode.OUTGOING: s = "made-call-mini"; break;
 	case Mode.MISSED: s = "missed-call-mini"; break;
 	default: return null;
 	}
-	var ic = new Elm.Icon(obj);
+	unowned Elm.Icon? ic = Elm.Icon.add(obj);
 	ic.standard_set(s);
 	// elm.swallow.icon will not display without call to scale_set
-	ic.scale_set(false, false);
+	//ic.scale_set(false, false);
+	ic.scale_set(1.0);
 	return ic;
     }
 
     public unowned CallItem? selected_item_get()
     {
-	unowned GenlistItem item = lst.selected_item_get();
+	unowned GenlistItem? item = lst.selected_item_get();
 	return (item != null) ? (CallItem) item.data_get() : null;
     }
 
@@ -488,10 +490,10 @@ class CallsList
 class MainWin
 {
     Win win;
-    Bg bg;
-    Box bx;
-    Box bx2;
-    Toolbar tb;
+    unowned Bg? bg;
+    unowned Box? bx;
+    unowned Box? bx2;
+    unowned Toolbar? tb;
     CallsList calls;
 
     public MainWin()
@@ -502,17 +504,17 @@ class MainWin
 	win.title_set("PhoneLog");
 	win.smart_callback_add("delete,request", close);
 
-	bg = new Bg(win);
+	bg = Bg.add(win);
 	bg.size_hint_weight_set(1.0, 1.0);
 	bg.show();
 	win.resize_object_add(bg);
 
-	bx = new Box(win);
+	bx = Box.add(win);
 	bx.size_hint_weight_set(1.0, 1.0);
 	win.resize_object_add(bx);
 	bx.show();
 
-	tb = new Toolbar(win);
+	tb = Toolbar.add(win);
 	tb.size_hint_weight_set(0.0, 0.0);
 	tb.size_hint_align_set(Evas.Hint.FILL, 0.0);
 	bx.pack_end(tb);
@@ -525,17 +527,16 @@ class MainWin
 	bx.pack_end(calls.lst);
 	calls.lst.show();
 
-	(void) tb.append("received-call", "In",
+	tb.append("received-call", "In",
 			 () => calls.switch_to_mode(Mode.INCOMING));
-	(void) tb.append("made-call", "Out",
+	tb.append("made-call", "Out",
 			 () => calls.switch_to_mode(Mode.OUTGOING));
-	((ToolbarItem *) tb.append(
-	    "missed-call", "Missed",
-	    () => calls.switch_to_mode(Mode.MISSED)))->selected_set(true);
-	(void) tb.append("general-call", "All",
+	tb.append("missed-call", "Missed",
+			() => calls.switch_to_mode(Mode.MISSED)).selected_set(true);
+	tb.append("general-call", "All",
 			 () => calls.switch_to_mode(Mode.ALL));
 
-	bx2 = new Box(win);
+	bx2 = Box.add(win);
 	bx2.size_hint_align_set(-1.0, -1.0);
 	bx2.horizontal_set(true);
 	bx2.homogeneous_set(true);
@@ -563,13 +564,13 @@ class MainWin
 
     void add_button(string label, Evas.Callback cb)
     {
-	Button *bt = new Button(win);
-	bt->text_set(label);
-	bt->smart_callback_add("clicked", cb);
-	bt->size_hint_weight_set(1.0, 0.0);
-	bt->size_hint_align_set(-1.0, -1.0);
+	unowned Button? bt = Button.add(win);
+	bt.text_set(label);
+	bt.smart_callback_add("clicked", cb);
+	bt.size_hint_weight_set(1.0, 0.0);
+	bt.size_hint_align_set(-1.0, -1.0);
 	bx2.pack_end(bt);
-	bt->show();
+	bt.show();
     }
 }
 
