@@ -427,7 +427,7 @@ class CallsList
     {
 	if (item.subitems > 0)
 	    lst.item_append(itc, item, null,
-			    GenlistItemType.SUBITEMS, null);
+			    GenlistItemType.TREE, null);
 	else
 	    lst.item_append(itc, item, null,
 			    GenlistItemType.NONE, null);
